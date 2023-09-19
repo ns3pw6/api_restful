@@ -56,6 +56,23 @@ class User(Resource):
         db.close()
         return jsonify(response)
     
+    def delete(self, id):
+        db, cursor = self.db_init()
+        sql = """
+            DELETE FROM `apitest`.`users` WHERE (`id` = '{}') 
+        """.format(id)
+        response = {}
+        try:
+            cursor.execute(sql)
+            response['msg'] = 'Success'
+        except:
+            traceback.print_exc()
+            response['msg'] = 'Failed'
+            
+        db.commit()
+        db.close()
+        return jsonify(response)
+    
 
 class Users(Resource):    
     def db_init(self):
