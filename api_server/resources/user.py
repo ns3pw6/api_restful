@@ -26,7 +26,36 @@ class User(Resource):
         user = cursor.fetchone()
         db.close()
         return jsonify({'data' : user})        
-
+    
+    def patch(self, id):
+        db, cursor = self.db_init()
+        arg  = parser.parse_args()
+        user = {
+            'name' : arg['name'],
+            'gender' : arg['gender'],
+            'birth' : arg['birth'],
+            'note' : arg['note']
+        }
+        query = []
+        for key, value in user.items():
+            if value != None:
+                query.append(key + " = " + " '{}' ".format(value))
+        query = ','.join(query)
+        sql = """
+            UPDATE `apitest`.`users` SET {} WHERE (`id` = '{}');
+        """.format(query, id)
+        response = {}
+        try:
+            cursor.execute(sql)
+            response['msg'] = 'Success'
+        except:
+            traceback.print_exc()
+            response['msg'] = 'Failed'
+        
+        db.commit()
+        db.close()
+        return jsonify(response)
+    
 
 class Users(Resource):    
     def db_init(self):
