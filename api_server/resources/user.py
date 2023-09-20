@@ -21,7 +21,7 @@ class User(Resource):
     def get(self, id):
         db, cursor = self.db_init()
         sql = """
-            SELECT * FROM apitest.users WHERE id = '{}' AND deleted IS NOT True;
+            SELECT * FROM apitest.users WHERE id = '{}' AND deleted IS NOT TRUE;
         """.format(id)
         cursor.execute(sql)
         db.commit()
@@ -61,7 +61,7 @@ class User(Resource):
     def delete(self, id):
         db, cursor = self.db_init()
         sql = """
-            UPDATE `apitest`.`users` SET deleted = True WHERE (`id` = '{}'); 
+            UPDATE `apitest`.`users` SET deleted = TRUE WHERE (`id` = '{}'); 
         """.format(id)
         response = {}
         try:
@@ -84,8 +84,9 @@ class Users(Resource):
     
     def get(self):
         db, cursor = self.db_init()
-        sql = 'SELECT * FROM apitest.users WHERE deleted IS NOT True'
+        sql = 'SELECT * FROM apitest.users WHERE deleted IS NOT TRUE'
         cursor.execute(sql)
+        
         db.commit()
         users = cursor.fetchall()
         db.close()
