@@ -23,7 +23,9 @@ class User(Resource):
         sql = """
             SELECT * FROM apitest.users WHERE id = '{}' AND deleted IS NOT TRUE;
         """.format(id)
+        
         cursor.execute(sql)
+        
         db.commit()
         user = cursor.fetchone()
         db.close()
@@ -41,11 +43,12 @@ class User(Resource):
         query = []
         for key, value in user.items():
             if value != None:
-                query.append(key + " = " + " '{}' ".format(value))
+                query.append(key + " = " + "'{}' ".format(value))
         query = ','.join(query)
         sql = """
             UPDATE `apitest`.`users` SET {} WHERE (`id` = '{}');
         """.format(query, id)
+        
         response = {}
         try:
             cursor.execute(sql)
@@ -63,6 +66,7 @@ class User(Resource):
         sql = """
             UPDATE `apitest`.`users` SET deleted = TRUE WHERE (`id` = '{}'); 
         """.format(id)
+        
         response = {}
         try:
             cursor.execute(sql)
@@ -85,6 +89,7 @@ class Users(Resource):
     def get(self):
         db, cursor = self.db_init()
         sql = 'SELECT * FROM apitest.users WHERE deleted IS NOT TRUE'
+        
         cursor.execute(sql)
         
         db.commit()
