@@ -88,7 +88,7 @@ class Users(Resource):
     
     def get(self):
         db, cursor = self.db_init()
-        sql = 'SELECT * FROM apitest.users WHERE deleted IS NOT TRUE'
+        sql = """SELECT * FROM apitest.users WHERE deleted IS NOT TRUE"""
         
         cursor.execute(sql)
         

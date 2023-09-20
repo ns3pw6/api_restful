@@ -4,6 +4,8 @@ from resources.user import Users, User
 from resources.account import Accounts, Account
 import pymysql
 import traceback
+import jwt
+import time
 
 
 app = Flask(__name__)
@@ -13,6 +15,20 @@ api.add_resource(Users, '/users')
 api.add_resource(User, '/user/<id>')
 api.add_resource(Accounts, '/user/<user_id>/accounts')
 api.add_resource(Account, '/user/<user_id>/account/<id>')
+
+@app.before_request
+def auth():
+    token = request.headers.get('auth')
+    user_id = request.get_json()['user_id']
+    valid_token = jwt.encode({'user_id' : user_id, 'timestamp' : int(time.time())}, 'password', algorithm = 'HS256').decode('utf-8')
+    print(jwt.encode({'user_id' : user_id, 'timestamp' : int(time.time())}, 'password', algorithm = 'HS256'))
+    print(valid_token)
+    if token == valid_token:
+        pass
+    else:
+        return{
+            'msg' : 'invalid token'
+        }
 
 @app.route('/')
 def index():
