@@ -16,19 +16,28 @@ api.add_resource(User, '/user/<id>')
 api.add_resource(Accounts, '/user/<user_id>/accounts')
 api.add_resource(Account, '/user/<user_id>/account/<id>')
 
-@app.before_request
-def auth():
-    token = request.headers.get('auth')
-    user_id = request.get_json()['user_id']
-    valid_token = jwt.encode({'user_id' : user_id, 'timestamp' : int(time.time())}, 'password', algorithm = 'HS256').decode('utf-8')
-    print(jwt.encode({'user_id' : user_id, 'timestamp' : int(time.time())}, 'password', algorithm = 'HS256'))
-    print(valid_token)
-    if token == valid_token:
-        pass
-    else:
-        return{
-            'msg' : 'invalid token'
-        }
+@app.errorhandler(Exception)
+def handle_error(error):
+    status_code = 500
+    if type(error).__name__ == "NotFound":
+        status_code = 404
+    elif type(error).__name__ == "TypeError":
+        status_code = 500
+        
+    return jsonify({'msg':type(error).__name__}), status_code
+
+# @app.before_request
+# def auth():
+#     token = request.headers.get('auth')
+#     user_id = request.get_json()['user_id']
+#     token = jwt.encode({'user_id' : token, 'timestamp' : int(time.time())}, 'password', algorithm = 'HS256').decode('utf-8')
+#     valid_token = jwt.encode({'user_id' : user_id, 'timestamp' : int(time.time())}, 'password', algorithm = 'HS256').decode('utf-8')
+#     if token == valid_token:
+#         pass
+#     else:
+#         return{
+#             'msg' : 'invalid token'
+#         }
 
 @app.route('/')
 def index():

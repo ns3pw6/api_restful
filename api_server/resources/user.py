@@ -1,5 +1,5 @@
 from flask_restful import Resource, reqparse
-from flask import jsonify
+from flask import jsonify, make_response
 import pymysql
 import traceback
 
@@ -111,13 +111,15 @@ class Users(Resource):
         """.format(user['name'], user['gender'], user['birth'], user['note'])
         
         response = {}
+        status_code = 200
         try:
             cursor.execute(sql)
             response['msg'] = 'Success'
         except:
+            status_code = 400
             traceback.print_exc()
             response['msg'] = 'Failed'
             
         db.commit()
         db.close()
-        return jsonify(response)
+        return make_response(jsonify(response), status_code)
