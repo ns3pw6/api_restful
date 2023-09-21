@@ -4,22 +4,32 @@ import traceback
 from server import db
 from models import UserModel
 
-# 
-# Preventing SQL injection in Python, only accept these fields
-# 
+#
+# Create a parser for handling request arguments
+# Preventing SQL injection in Python, only accept these field
+#
 parser = reqparse.RequestParser()
 parser.add_argument('name')
 parser.add_argument('gender')
 parser.add_argument('birth')
 parser.add_argument('note')
 
+#
+# Define a class for handling individual user resources
+#
 class User(Resource):
+    #
+    # Handle HTTP GET request to retrieve a user by ID
+    #
     def get(self, id):
         ls = []
         user = UserModel.query.filter_by(id = id, deleted = None).first()
         ls.append(user)
         return jsonify({'data' : list(map(lambda user : user.serialize(), ls))})
     
+    #
+    # Handle HTTP PATCH request to update a user's details
+    #
     def patch(self, id):
         arg  = parser.parse_args()
         user = UserModel.query.filter_by(id = id, deleted = None).first()
@@ -45,7 +55,8 @@ class User(Resource):
         return make_response(jsonify(response), status_code)
     
     # 
-    # hard delete
+    # Handle HTTP DELETE request to hard delete a user
+    # This is hard delete
     # 
     def delete(self, id):
         user = UserModel.query.filter_by(id = id, deleted = None).first()
@@ -64,11 +75,20 @@ class User(Resource):
         return make_response(jsonify(response), status_code)
     
 
+#
+# Define a class for handling multiple users
+#
 class Users(Resource):        
+    #
+    # Handle HTTP GET request to retrieve all users
+    #
     def get(self):
         users = UserModel.query.filter(UserModel.deleted.isnot(True)).all()
         return jsonify({'data' : list(map(lambda user : user.serialize(), users))})
     
+    #
+    # Handle HTTP POST request to create a new user
+    #
     def post(self):
         arg = parser.parse_args()
         user = {

@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import request, jsonify
 from flask_restful import Api
 from resources.user import Users, User
 from resources.account import Accounts, Account
@@ -9,16 +9,29 @@ import traceback
 import os
 
 
-
 # app = Flask(__name__)
+
+#
+# Create an API object for routing
+#
 api = Api(app)
+
+#
+# Load environment variables from a .env file
+#
 load_dotenv()
 
+#
+# Define API endpoints and link them to resources
+#
 api.add_resource(Users, '/users')
 api.add_resource(User, '/user/<id>')
 api.add_resource(Accounts, '/user/<user_id>/accounts')
 api.add_resource(Account, '/user/<user_id>/account/<id>')
 
+#
+# Define error handling for exceptions
+#
 @app.errorhandler(Exception)
 def handle_error(error):
     status_code = 500
@@ -29,19 +42,9 @@ def handle_error(error):
         
     return jsonify({'msg':type(error).__name__}), status_code
 
-# @app.before_request
-# def auth():
-#     token = request.headers.get('auth')
-#     user_id = request.get_json()['user_id']
-#     token = jwt.encode({'user_id' : token, 'timestamp' : int(time.time())}, 'password', algorithm = 'HS256').decode('utf-8')
-#     valid_token = jwt.encode({'user_id' : user_id, 'timestamp' : int(time.time())}, 'password', algorithm = 'HS256').decode('utf-8')
-#     if token == valid_token:
-#         pass
-#     else:
-#         return{
-#             'msg' : 'invalid token'
-#         }
-
+#
+# Define a route for the root endpoint
+#
 @app.route('/')
 def index():
     return 'Hello World'
@@ -66,8 +69,11 @@ def deposit(user_id, id):
     db.commit()
     db.close()
     return jsonify(response)
-    
-    
+
+
+#
+# Define a route for depositing money into an account       
+#
 @app.route('/user/<user_id>/account/<id>/withdraw', methods = ['POST'])
 def withdraw(user_id, id):
     db, cursor, account = get_account(id)
@@ -89,7 +95,10 @@ def withdraw(user_id, id):
     db.close()
     return jsonify(response)
  
-        
+
+#
+# Define a route for withdrawing money from an account
+#
 def get_account(id):
     db = pymysql.connect(host = 'localhost', user = 'root', password = os.getenv("db_password"), db = 'apitest')
     cursor = db.cursor(pymysql.cursors.DictCursor)
