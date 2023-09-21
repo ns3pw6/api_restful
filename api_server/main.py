@@ -6,9 +6,10 @@ import pymysql
 import traceback
 import jwt
 import time
+from server import app
 
 
-app = Flask(__name__)
+# app = Flask(__name__)
 api = Api(app)
 
 api.add_resource(Users, '/users')

@@ -2,6 +2,9 @@ from flask_restful import Resource, reqparse
 from flask import jsonify, make_response
 import pymysql
 import traceback
+import json
+from server import db
+from models import UserModel
 
 # 
 # Preventing SQL injection in Python, only accept these fields
@@ -13,92 +16,62 @@ parser.add_argument('birth')
 parser.add_argument('note')
 
 class User(Resource):
-    def db_init(self):
-        db = pymysql.connect(host = 'localhost', user = 'root', password = 'zyhdEx-3timma-rotsiv', db = 'apitest')
-        cursor = db.cursor(pymysql.cursors.DictCursor)
-        return db, cursor
-    
     def get(self, id):
-        db, cursor = self.db_init()
-        sql = """
-            SELECT * FROM apitest.users WHERE id = '{}' AND deleted IS NOT TRUE;
-        """.format(id)
-        
-        cursor.execute(sql)
-        
-        db.commit()
-        user = cursor.fetchone()
-        db.close()
-        return jsonify({'data' : user})        
+        ls = []
+        user = UserModel.query.filter_by(id = id, deleted = None).first()
+        ls.append(user)
+        return jsonify({'data' : list(map(lambda user : user.serialize(), ls))})
     
     def patch(self, id):
-        db, cursor = self.db_init()
         arg  = parser.parse_args()
-        user = {
-            'name' : arg['name'],
-            'gender' : arg['gender'],
-            'birth' : arg['birth'],
-            'note' : arg['note']
-        }
-        query = []
-        for key, value in user.items():
-            if value != None:
-                query.append(key + " = " + "'{}' ".format(value))
-        query = ','.join(query)
-        sql = """
-            UPDATE `apitest`.`users` SET {} WHERE (`id` = '{}');
-        """.format(query, id)
+        user = UserModel.query.filter_by(id = id, deleted = None).first()
+        if arg['name'] != None:
+            user.name = arg['name']
+        if arg['gender'] != None:
+            user.gender = arg['gender']
+        if arg['birth'] != None:
+            user.birth = arg['birth']
+        if arg['note'] != None:
+            user.note = arg['note']
         
         response = {}
+        status_code = 200
         try:
-            cursor.execute(sql)
+            db.session.commit()
             response['msg'] = 'Success'
         except:
+            status_code = 400
             traceback.print_exc()
             response['msg'] = 'Failed'
         
-        db.commit()
-        db.close()
-        return jsonify(response)
+        return make_response(jsonify(response), status_code)
     
+    # 
+    # hard delete
+    # 
     def delete(self, id):
-        db, cursor = self.db_init()
-        sql = """
-            UPDATE `apitest`.`users` SET deleted = TRUE WHERE (`id` = '{}'); 
-        """.format(id)
+        user = UserModel.query.filter_by(id = id, deleted = None).first()
         
         response = {}
+        status_code = 200
         try:
-            cursor.execute(sql)
+            db.session.delete(user)
+            db.session.commit()
             response['msg'] = 'Success'
         except:
+            status_code = 400
             traceback.print_exc()
             response['msg'] = 'Failed'
             
-        db.commit()
-        db.close()
-        return jsonify(response)
+        return make_response(jsonify(response), status_code)
     
 
-class Users(Resource):    
-    def db_init(self):
-        db = pymysql.connect(host = 'localhost', user = 'root', password = 'zyhdEx-3timma-rotsiv', db = 'apitest')
-        cursor = db.cursor(pymysql.cursors.DictCursor)
-        return db, cursor
-    
+class Users(Resource):        
     def get(self):
-        db, cursor = self.db_init()
-        sql = """SELECT * FROM apitest.users WHERE deleted IS NOT TRUE"""
-        
-        cursor.execute(sql)
-        
-        db.commit()
-        users = cursor.fetchall()
-        db.close()
-        return jsonify({'data' : users})
+        users = UserModel.query.filter(UserModel.deleted.isnot(True)).all()
+        return jsonify({'data' : list(map(lambda user : user.serialize(), users))})
     
     def post(self):
-        db, cursor = self.db_init()
         arg = parser.parse_args()
         user = {
             'name' : arg['name'],
@@ -106,20 +79,17 @@ class Users(Resource):
             'birth' : arg['birth'] or '1900-01-01',
             'note' : arg['note']
         }
-        sql = """
-            INSERT INTO `apitest`.`users` (`name`, `gender`, `birth`, `note`) VALUES ('{}', '{}', '{}', '{}');
-        """.format(user['name'], user['gender'], user['birth'], user['note'])
         
         response = {}
         status_code = 200
         try:
-            cursor.execute(sql)
+            new_user = UserModel(name = user['name'], gender = user['gender'], birth = user['birth'], note = user['note'])
+            db.session.add(new_user)
+            db.session.commit()
             response['msg'] = 'Success'
         except:
             status_code = 400
             traceback.print_exc()
             response['msg'] = 'Failed'
             
-        db.commit()
-        db.close()
         return make_response(jsonify(response), status_code)
