@@ -2,13 +2,17 @@ from flask import Flask, request, jsonify
 from flask_restful import Api
 from resources.user import Users, User
 from resources.account import Accounts, Account
+from dotenv import load_dotenv
+from server import app
 import pymysql
 import traceback
-from server import app
+import os
+
 
 
 # app = Flask(__name__)
 api = Api(app)
+load_dotenv()
 
 api.add_resource(Users, '/users')
 api.add_resource(User, '/user/<id>')
@@ -87,7 +91,7 @@ def withdraw(user_id, id):
  
         
 def get_account(id):
-    db = pymysql.connect(host = 'localhost', user = 'root', password = 'zyhdEx-3timma-rotsiv', db = 'apitest')
+    db = pymysql.connect(host = 'localhost', user = 'root', password = os.getenv("db_password"), db = 'apitest')
     cursor = db.cursor(pymysql.cursors.DictCursor)
     sql = """
         SELECT * FROM apitest.account WHERE id = '{}' AND deleted IS NOT TRUE

@@ -2,7 +2,10 @@ from flask_restful import Resource, reqparse
 from flask import jsonify
 import pymysql
 import traceback
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 parser = reqparse.RequestParser()
 parser.add_argument('balance')
 parser.add_argument('account_number')
@@ -10,7 +13,7 @@ parser.add_argument('user_id')
 
 class Account(Resource):
     def db_init(self):
-        db = pymysql.connect(host = 'localhost', user = 'root', password = 'zyhdEx-3timma-rotsiv', db = 'apitest')
+        db = pymysql.connect(host = 'localhost', user = 'root', password = os.getenv("db_password"), db = 'apitest')
         cursor = db.cursor(pymysql.cursors.DictCursor)
         return db, cursor
     
@@ -78,7 +81,7 @@ class Account(Resource):
 
 class Accounts(Resource):
     def db_init(self):
-        db = pymysql.connect(host = 'localhost', user = 'root', password = 'zyhdEx-3timma-rotsiv', db = 'apitest')
+        db = pymysql.connect(host = 'localhost', user = 'root', password = os.getenv("db_password"), db = 'apitest')
         cursor = db.cursor(pymysql.cursors.DictCursor)
         return db, cursor
     
