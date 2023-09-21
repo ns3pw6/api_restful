@@ -1,8 +1,6 @@
 from flask_restful import Resource, reqparse
 from flask import jsonify, make_response
-import pymysql
 import traceback
-import json
 from server import db
 from models import UserModel
 

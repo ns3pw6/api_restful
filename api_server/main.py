@@ -4,8 +4,6 @@ from resources.user import Users, User
 from resources.account import Accounts, Account
 import pymysql
 import traceback
-import jwt
-import time
 from server import app
 
 
