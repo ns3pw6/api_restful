@@ -37,3 +37,27 @@ class UserModel(db.Model):
             "note" : self.note,
             "deleted" : self.deleted
         }
+        
+class AccountModel(db.Model):
+    __tablename__ = 'account'
+    
+    id = db.Column(db.Integer, primary_key = True)
+    user_id = db.Column(db.Integer)
+    balance = db.Column(db.Integer)
+    account_number = db.Column(db.Integer)
+    deleted = db.Column(db.Boolean)
+    
+    def __init__(self, user_id, balance, account_number, deleted = None):
+        self.user_id = user_id
+        self.balance = balance
+        self.account_number = account_number
+        self.deleted = deleted
+    
+    def serialize(self):
+        return{
+            "user_id" : self.user_id,
+            "balance" : self.balance,
+            "account_number" : self.account_number,
+            "deleted" : self.deleted
+        }
+        

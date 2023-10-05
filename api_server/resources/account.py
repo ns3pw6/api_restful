@@ -1,11 +1,8 @@
 from flask_restful import Resource, reqparse
-from flask import jsonify
-import pymysql
+from flask import jsonify, make_response
 import traceback
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
+from server import db
+from models import AccountModel
 
 #
 # Create a parser for handling request arguments
@@ -19,85 +16,60 @@ parser.add_argument('user_id')
 #
 # Define a class for handling individual account resources
 #
-class Account(Resource):
-    #
-    # Initialize the database connection
-    #
-    def db_init(self):
-        db = pymysql.connect(host = 'localhost', user = 'root', password = os.getenv("db_password"), db = 'apitest')
-        cursor = db.cursor(pymysql.cursors.DictCursor)
-        return db, cursor
-    
+class Account(Resource):    
     #
     # Handle HTTP GET request to retrieve account details by user_id and id_number
     #
     def get(self, user_id, id):
-        db, cursor = self.db_init()
-        sql = """
-            SELECT * FROM apitest.account WHERE user_id = '{}' AND id = '{}'
-        """.format(user_id, id)
-        
-        cursor.execute(sql)
-        
-        db.commit()
-        account = cursor.fetchone()
-        db.close()
-        return jsonify({'data' : account})
+        ls = []
+        account = AccountModel.query.filter_by(id = id, user_id = user_id, deleted = None).first()
+        ls.append(account)
+        return jsonify({'data' : list(map(lambda account : account.serialize(), ls))})
     
     #
     # Handle HTTP PATCH request to update account details by user_id and id_number
     #
     def patch(self, user_id, id):
-        db, cursor = self.db_init()
         arg = parser.parse_args()
-        account = {
-            'user_id' : arg['user_id'],
-            'balance' : arg['balance'],
-            'account_number' : arg['account_number']
-        }
-        query = []
-        for key, value in account.items():
-            if value != None:
-                query.append(key + " = " + "'{}' ".format(value))
-        query = ','.join(query)
-
-        sql = """
-            UPDATE `apitest`.`account` SET {} WHERE (`user_id` = '{}' AND `id` = '{}')
-        """.format(query, user_id, id)
-        
+        account = AccountModel.query.filter_by(id = id, user_id = user_id, deleted = None).first()
+        if arg['balance'] != None:
+            account.balance = arg['balance']
+        if arg['user_id'] != None:
+            account.user_id = arg['user_id']
+        if arg['account_number'] != None:
+            account.account_number = arg['account_number']   
+ 
         response = {}
+        status_code = 200
         try:
-            cursor.execute(sql)
+            db.session.commit()
             response['msg'] = 'Success'
         except:
+            status_code = 400
             traceback.print_exc()
             response['msg'] = 'Failed'
         
-        db.commit()
-        db.close()
-        return jsonify(response)
+        return make_response(jsonify(response), status_code)
     
     #
     # Handle HTTP DELETE request to mark an account as deleted by user_id and id_number
-    # This is soft delete
+    # This is hard delete
     #
     def delete(self, user_id, id):
-        db, cursor = self.db_init()
-        sql = """
-            UPDATE `apitest`.`account` SET deleted = TRUE WHERE (`id` = '{}' AND `user_id` = '{}'); 
-        """.format(id, user_id)
+        account = AccountModel.query.filter_by(id = id, user_id = user_id, deleted = None).first()
         
         response = {}
+        status_code = 200
         try:
-            cursor.execute(sql)
+            db.session.delete(account)
+            db.session.commit()
             response['msg'] = 'Success'
         except:
+            status_code = 400
             traceback.print_exc()
             response['msg'] = 'Failed'
             
-        db.commit()
-        db.close()
-        return jsonify(response)
+        return make_response(jsonify(response), status_code)
 
 
 #
@@ -105,52 +77,34 @@ class Account(Resource):
 #
 class Accounts(Resource):
     #
-    # Initialize the database connection
-    #
-    def db_init(self):
-        db = pymysql.connect(host = 'localhost', user = 'root', password = os.getenv("db_password"), db = 'apitest')
-        cursor = db.cursor(pymysql.cursors.DictCursor)
-        return db, cursor
-    
-    #
     # Handle HTTP GET request to retrieve all accounts of a user
     #
     def get(self, user_id):
-        db, cursor = self.db_init()
-        sql = """
-            SELECT * FROM apitest.account WHERE user_id = "{}" AND deleted IS NOT TRUE
-        """.format(user_id)
-        cursor.execute(sql)
-        
-        db.commit()
-        accounts = cursor.fetchall()
-        db.close()
-        return jsonify(accounts)
+        accounts = AccountModel.query.filter_by(user_id = user_id, deleted = None).all()
+        return jsonify({'data' : list(map(lambda accounts : accounts.serialize(), accounts))})
     
     #
     # Handle HTTP POST request to create a new account for a user
     #
     def post(self, user_id):
-        db, cursor = self.db_init()
         arg = parser.parse_args()
         account = {
             'balance' : arg['balance'],
             'account_number' : arg['account_number'],
             'user_id' : arg['user_id']
         }
-        sql = """
-            INSERT INTO `apitest`.`account` (`user_id`, `balance`, `account_number`) VALUES ('{}', '{}', '{}');
-        """.format(account['user_id'], account['balance'], account['account_number'])
         
         response = {}
+        status_code = 200
         try:
-            cursor.execute(sql)
+            new_account = AccountModel(user_id = account['user_id'], balance = account['balance'], account_number = account['account_number'])
+            db.session.add(new_account)
+            db.session.commit()
             response['msg'] = 'Success'
         except:
+            status_code = 400
             traceback.print_exc()
             response['msg'] = 'Failed'
             
-        db.commit()
-        db.close()
-        return jsonify(response)
+        return make_response(jsonify(response), status_code)
             

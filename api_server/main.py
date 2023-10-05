@@ -1,9 +1,10 @@
-from flask import request, jsonify
+from flask import request, jsonify, make_response
 from flask_restful import Api
 from resources.user import Users, User
 from resources.account import Accounts, Account
 from dotenv import load_dotenv
-from server import app
+from server import app, db
+from models import AccountModel
 import pymysql
 import traceback
 import os
@@ -51,24 +52,28 @@ def index():
 
 @app.route('/user/<user_id>/account/<id>/deposit', methods = ['POST'])
 def deposit(user_id, id):
-    db, cursor, account = get_account(id)
-    money = request.get_json()['money']
-    balance = account['balance'] + int(money)
-    sql = """
-        UPDATE apitest.account SET balance = {} WHERE id = {} AND deleted IS NOT TRUE
-    """.format(balance, id)
-    
+    account = AccountModel.query.filter_by(user_id = user_id, id = id).first()
+    money = int(request.get_json()['money'])
     response = {}
+    status_code = 200
+
+    if money > 0:
+        account.balance += money
+    else:
+        status_code = 400
+        response['msg'] = 'Invalid number'
+        return make_response(jsonify(response), status_code)
+    
+
     try:
-        cursor.execute(sql)
+        db.session.commit()
         response['msg'] = 'Success'
     except:
+        status_code = 400
         traceback.print_exc()
         response['msg'] = 'Failed'
-    
-    db.commit()
-    db.close()
-    return jsonify(response)
+
+    return make_response(jsonify(response), status_code)
 
 
 #
@@ -76,39 +81,33 @@ def deposit(user_id, id):
 #
 @app.route('/user/<user_id>/account/<id>/withdraw', methods = ['POST'])
 def withdraw(user_id, id):
-    db, cursor, account = get_account(id)
-    money = request.get_json()['money']
-    balance = account['balance'] - int(money)
-    sql = """
-        UPDATE apitest.account SET balance = {} WHERE id = {} AND deleted IS NOT TRUE
-    """.format(balance, id)
-    
+    account = AccountModel.query.filter_by(user_id = user_id, id = id).first()
+    money = int(request.get_json()['money'])
     response = {}
+    status_code = 200
+
+    if money > 0:
+        if account.balance < money:
+            status_code = 400
+            response['msg'] = 'No sufficient money'
+            return make_response(jsonify(response), status_code)
+        account.balance -= money
+    else:
+        status_code = 400
+        response['msg'] = 'Invalid number'
+        return make_response(jsonify(response), status_code)
+    
+    
     try:
-        cursor.execute(sql)
+        db.session.commit()
         response['msg'] = 'Success'
     except:
+        status_code = 400
         traceback.print_exc()
         response['msg'] = 'Failed'
-    
-    db.commit()
-    db.close()
-    return jsonify(response)
+    print('here')
+    return make_response(jsonify(response), status_code)
  
-
-#
-# Define a route for withdrawing money from an account
-#
-def get_account(id):
-    db = pymysql.connect(host = 'localhost', user = 'root', password = os.getenv("db_password"), db = 'apitest')
-    cursor = db.cursor(pymysql.cursors.DictCursor)
-    sql = """
-        SELECT * FROM apitest.account WHERE id = '{}' AND deleted IS NOT TRUE
-    """.format(id)
-    
-    cursor.execute(sql)
-    return db, cursor, cursor.fetchone()
-
 if __name__ == '__main__':
     app.debug = True
     app.run(host='127.0.0.1', port = 8000)
