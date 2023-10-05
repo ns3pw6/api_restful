@@ -5,9 +5,7 @@ from resources.account import Accounts, Account
 from dotenv import load_dotenv
 from server import app, db
 from models import AccountModel
-import pymysql
 import traceback
-import os
 
 
 # app = Flask(__name__)
