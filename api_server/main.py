@@ -48,6 +48,9 @@ def handle_error(error):
 def index():
     return 'Hello World'
 
+#
+# Define a route for depositing money into an account       
+#
 @app.route('/user/<user_id>/account/<id>/deposit', methods = ['POST'])
 def deposit(user_id, id):
     account = AccountModel.query.filter_by(user_id = user_id, id = id).first()
@@ -75,7 +78,7 @@ def deposit(user_id, id):
 
 
 #
-# Define a route for depositing money into an account       
+# Define a route for withdrawing money from an account       
 #
 @app.route('/user/<user_id>/account/<id>/withdraw', methods = ['POST'])
 def withdraw(user_id, id):
